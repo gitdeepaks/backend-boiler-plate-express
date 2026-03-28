@@ -40,7 +40,10 @@ export const login = async ({ email, password }) => {
   const user = await User.findOne({ email }).select("+password");
   if (!user) throw ApiError.unauthirized("Invalid email or password");
 
-  //TODO: somehow i will check password
+  // will check password
+  const isMatch = await user.comparePassword(password);
+
+  if (!isMatch) throw ApiError.unauthirized("Invalid email or password");
   if (user.isVerified) {
     throw ApiError.forbidden("Please verify your Email before login");
   }
@@ -94,7 +97,7 @@ export const refresh = async (token) => {
   };
 };
 
-export const logOut = async (userId) => {
+export const logout = async (userId) => {
   // const user = await User.findById(userId);
   // if (!user) throw ApiError.unauthirized("User not found");
 
@@ -120,4 +123,25 @@ export const forgotPassword = async (email) => {
   await user.save();
 
   // TODO: yet to send the mail
+};
+
+export const verifyEmail = async (token) => {
+  const hashedToken = hashToken(token);
+
+  const user = await User.findOne({ verificationToken: hashedToken }).select(
+    "+verificationToken",
+  );
+
+  if (!user) throw ApiError.notFound("Invalid or expired token");
+
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  await user.save();
+  return user;
+};
+
+export const getMe = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw ApiError.notFound("User not found");
+  return user;
 };

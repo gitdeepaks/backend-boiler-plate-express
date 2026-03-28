@@ -2,7 +2,7 @@ export class ApiError extends Error {
   constructor(statusCode, message) {
     super(message);
     this.statusCode = statusCode;
-    this.isOperational = true; // Very important to handle the error, its vasically a flag.
+    this.isOperational = true; // Very important to handle the error, its basically a flag.
     Error.captureStackTrace(this, this.constructor);
   }
 
