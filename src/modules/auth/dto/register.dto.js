@@ -7,7 +7,8 @@ export class RegisterDto extends BaseDto {
     email: Joi.string().email().lowercase().required(),
     password: Joi.string()
       .min(8)
-      .message("Password must contain 8 char minimum")
+      .max(128)
+      .message("Password must be between 8 and 128 characters")
       .required(),
     role: Joi.string().valid("customer", "seller").default("customer"),
   });

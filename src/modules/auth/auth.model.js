@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: 8,
-      maxlength: 8,
+      maxlength: 128,
       select: false,
     },
     role: {
@@ -54,10 +54,9 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
   this.password = await bcryptjs.hash(this.password, 12);
-  next();
 });
 userSchema.methods.comparePassword = async function (clearTextPassword) {
   return await bcryptjs.compare(clearTextPassword, this.password);

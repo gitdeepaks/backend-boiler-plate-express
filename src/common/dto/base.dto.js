@@ -10,8 +10,8 @@ export class BaseDto {
     });
 
     if (error) {
-      const error = error.details.map((d) => d.message);
-      return { error, value: null };
+      const messages = error.details.map((d) => d.message);
+      return { error: messages, value: null };
     }
     return { error: null, value };
   }

@@ -1,9 +1,10 @@
+import crypto from "crypto";
 import { ApiError } from "../../common/utils/api-error.js";
 import {
   generateAccessToken,
   generateRefreshToken,
   generateResetToken,
-  veryfyRefreshToken,
+  verifyRefreshToken,
 } from "../../common/utils/jwt.utils.js";
 import User from "./auth.model.js";
 
@@ -44,8 +45,8 @@ export const login = async ({ email, password }) => {
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) throw ApiError.unauthirized("Invalid email or password");
-  if (user.isVerified) {
-    throw ApiError.forbidden("Please verify your Email before login");
+  if (!user.isVerified) {
+    throw ApiError.forbidden("Please verify your email before login");
   }
 
   const accessToken = generateAccessToken({ id: user._id, role: user.role });
@@ -71,7 +72,12 @@ export const login = async ({ email, password }) => {
 
 export const refresh = async (token) => {
   if (!token) throw ApiError.unauthirized("Refresh token is missing");
-  const decoded = veryfyRefreshToken(token);
+  let decoded;
+  try {
+    decoded = verifyRefreshToken(token);
+  } catch {
+    throw ApiError.unauthirized("Invalid or expired refresh token");
+  }
   const user = await User.findById(decoded.id).select("+refreshToken");
 
   if (!user) throw ApiError.unauthirized("User not found");
@@ -80,9 +86,9 @@ export const refresh = async (token) => {
     throw ApiError.unauthirized("Invalid refresh token");
   }
 
-  const accessToken = generateAccessToken({ id: user._id, role: user.role });
-  await user.save({
-    validateBeforeSave: false, //bcoz we know what we are doing or saving
+  const accessToken = generateAccessToken({
+    id: user._id,
+    role: user.role,
   });
 
   const userObj = user.toObject();
@@ -93,7 +99,7 @@ export const refresh = async (token) => {
   return {
     user: userObj,
     accessToken,
-    refreshToken,
+    refreshToken: token,
   };
 };
 
@@ -117,7 +123,7 @@ export const forgotPassword = async (email) => {
 
   const { rawToken, hashedToken } = generateResetToken();
 
-  user.resetPasswordToken = hashToken;
+  user.resetPasswordToken = hashedToken;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
 
   await user.save();
